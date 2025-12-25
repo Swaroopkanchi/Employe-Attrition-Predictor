@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Employee Attrition Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #f4f6f9, #e8ecf3);
+      margin: 0;
+    }
+
+    header {
+      background: linear-gradient(135deg, #2c3e50, #34495e);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 28px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 30px auto;
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 25px;
+    }
+
+    button {
+      padding: 12px 22px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      color: white;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .yes { background: #e74c3c; }
+    .no { background: #27ae60; }
+    .job { background: #2980b9; }
+    .dept { background: #8e44ad; }
+
+    button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      opacity: 0.95;
+    }
+
+    #output {
+      margin-top: 20px;
+      background: #f8f9fa;
+      border: 1px solid #ddd;
+      padding: 20px;
+      border-radius: 8px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: Consolas, monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
+
+    canvas {
+      margin-top: 30px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>📊 Employee Attrition Dashboard</header>
+
+<div class="container">
+
+  <div class="buttons">
+    <button class="yes" onclick="loadYes()">Attrition YES</button>
+    <button class="no" onclick="loadNo()">Attrition NO</button>
+    <button class="job" onclick="loadByJob()">By JobRole</button>
+    <button class="dept" onclick="loadByDept()">By Department</button>
+  </div>
+
+  <div id="output">Click any button to load data…</div>
+
+  <!-- Charts -->
+  <canvas id="pieChart"></canvas>
+  <canvas id="barChart"></canvas>
+
+</div>
+
+<script>
+  let pieChart, barChart;
+
+  function renderCharts(data, label) {
+    const departments = {};
+    data.forEach(emp => {
+      if (emp.Department) {
+        departments[emp.Department] = (departments[emp.Department] || 0) + 1;
+      }
+    });
+
+    const deptLabels = Object.keys(departments);
+    const deptCounts = Object.values(departments);
+
+    // Pie Chart (overall count)
+    if (pieChart) pieChart.destroy();
+    pieChart = new Chart(document.getElementById("pieChart"), {
+      type: "pie",
+      data: {
+        labels: [label],
+        datasets: [{
+          data: [data.length],
+          backgroundColor: label === "Attrition YES" ? ["#e74c3c"] : ["#27ae60"]
+        }]
+      }
+    });
+
+    // Bar Chart (department breakdown)
+    if (barChart) barChart.destroy();
+    barChart = new Chart(document.getElementById("barChart"), {
+      type: "bar",
+      data: {
+        labels: deptLabels,
+        datasets: [{
+          label: label + " by Department",
+          data: deptCounts,
+          backgroundColor: label === "Attrition YES" ? "#e74c3c" : "#27ae60"
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  function loadData(url, label) {
+    const output = document.getElementById("output");
+    output.innerText = "Loading... ⏳";
+
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        output.innerText = JSON.stringify(data, null, 2);
+        renderCharts(data, label);
+      })
+      .catch(err => {
+        output.innerText = "Error: " + err;
+      });
+  }
+
+  function loadYes() {
+    loadData("http://localhost:5000/employees/attrition/yes", "Attrition YES");
+  }
+
+  function loadNo() {
+    loadData("http://localhost:5000/employees/attrition/no", "Attrition NO");
+  }
+
+  function loadByJob() {
+    loadData("http://localhost:5000/employees/attrition/by-jobrole", "By JobRole");
+  }
+
+  function loadByDept() {
+    loadData("http://localhost:5000/employees/attrition/by-department", "By Department");
+  }
+</script>
+
+</body>
+</html>
